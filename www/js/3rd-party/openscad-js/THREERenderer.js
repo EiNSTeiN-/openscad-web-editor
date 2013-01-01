@@ -19,6 +19,9 @@ THREERenderer = (function() {
 
   THREERenderer.prototype.render = function(node) {
     var angle, child, csg, diff, geometry, list, nodetype, obj, points, triangles, union, vector, vertex, _i, _j, _k, _l, _len, _len1, _len2, _len3, _len4, _len5, _m, _n, _ref, _ref1, _ref2;
+    if (!(node != null)) {
+      return;
+    }
     nodetype = node.constructor.name;
     switch (nodetype) {
       case 'Echo':
@@ -139,6 +142,9 @@ THREERenderer = (function() {
         return geometry;
       case 'Intersection':
         list = this.render(node.body);
+        if (!(list != null)) {
+          return;
+        }
         if (!(list instanceof Array) || list.length <= 1) {
           return list;
         }
@@ -157,6 +163,9 @@ THREERenderer = (function() {
         return geometry;
       case 'Color':
         list = this.render(node.body);
+        if (!(list != null)) {
+          return;
+        }
         if (!(list instanceof Array)) {
           list = [list];
         }
@@ -170,6 +179,9 @@ THREERenderer = (function() {
         return list;
       case 'MultMatrix':
         list = this.render(node.body);
+        if (!(list != null)) {
+          return;
+        }
         if (!(list instanceof Array)) {
           list = [list];
         }

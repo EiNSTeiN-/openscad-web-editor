@@ -2,13 +2,13 @@
 
 class HomePage
     
-    constructor: (app, args, options) ->
+    constructor: (args, options) ->
         @self = new Element('div', options)
         Object.extend(@self, HomePage.prototype)
-        @self.init(app, args)
+        @self.init(args)
         return @self
     
-    init: (@app, @args) ->
+    init: (@args) ->
         
         t = """
         <div id="home-page">
@@ -18,11 +18,9 @@ class HomePage
             View and edit your OpenSCAD models in your browser!
         </p>
         <span>
-            <span class="error-message">
-                error?!
-            </span>
+            <span class="error-message"></span>
             <input id="search-term" type="text" style="width: 400px;" />
-            <a href="#repositories" class="browse">browse &raquo;</a><br />
+            <a href="#" class="browse">browse &raquo;</a><br />
             <span style="font-size: smaller; color: #808080;">Enter a github repository URL in the box above.</span>
         </span>
         </div>
@@ -33,7 +31,9 @@ class HomePage
         @error = @select('.error-message')[0]
         @input = @select('#search-term')[0]
         
-        @select('.browse')[0].observe 'click', (e) => @browse()
+        @select('.browse')[0].observe 'click', (e) =>
+            @browse()
+            e.stop()
         @input.observe 'keyup', (e) => @keyup(e)
         
         @error.hide()
@@ -69,7 +69,5 @@ class HomePage
         
         current_url = document.location.href.match(/([^#]+)(#.*)?/)[1]
         document.location.href = current_url + '#github/' + @github_repo
-        
-        @app.navigate_to(GithubRepo, @github_repo)
         
         return

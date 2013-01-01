@@ -28,10 +28,25 @@ class App
         
         @insert new Template(t).evaluate({})
         
-        @select('#home')[0].observe 'click', (e) => @navigate_to(HomePage)
-        @select('#about')[0].observe 'click', (e) => @navigate_to(AboutPage)
+        #@select('#home')[0].observe 'click', (e) => @navigate_to(HomePage)
+        #@select('#about')[0].observe 'click', (e) => @navigate_to(AboutPage)
+        
+        @menu = @select('#menu')[0]
+        @content = @select('#content')[0]
+            
+        Event.observe window, 'resize', (e) => @resized()
+        Event.observe window, 'hashchange', (e) => @hashchange()
+        
+        @hashchange()
+        @resized()
+        
+        return
+    
+    hashchange: () ->
         
         [path, args] = @anchor_path()
+        console.log ['navigating to', path, args]
+            
         path = 'home' if not path? or path not in ['home', 'about', 'github']
         if path?
             @navigate_to(HomePage, args) if path == 'home'
@@ -39,13 +54,6 @@ class App
             
             @navigate_to(GithubRepo, args) if path == 'github'
         
-        @menu = @select('#menu')[0]
-        @content = @select('#content')[0]
-            
-        Event.observe window, 'resize', (e) => @resized()
-        
-        @resized()
-            
         return
     
     resized: (e) ->
@@ -70,7 +78,7 @@ class App
         
         @cleanup()
         
-        @page = new ctor(@, args)
+        @page = new ctor(args)
         @select('#content')[0].insert @page
         
         return

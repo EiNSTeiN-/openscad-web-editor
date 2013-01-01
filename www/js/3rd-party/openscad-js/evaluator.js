@@ -301,9 +301,9 @@ Rotate = (function(_super) {
   function Rotate(body, args, kwargs) {
     var parent, _ref;
     this.body = body;
-    this.prototype = ['degree', ['vector', null]];
+    this.prototype = [['degree', null], ['vector', null], ['a', null]];
     this.parseargs(args, kwargs);
-    this.degree = this.argshash.get('degree');
+    this.degree = this.argshash.get('degree') || this.argshash.get('a');
     this.vector = this.argshash.get('vector');
     if (this.degree instanceof VectorIterator && !(typeof b !== "undefined" && b !== null)) {
       _ref = [1, this.degree], this.degree = _ref[0], this.vector = _ref[1];
@@ -421,9 +421,9 @@ Translate = (function(_super) {
   function Translate(body, args, kwargs) {
     var m;
     this.body = body;
-    this.prototype = ['convexity'];
+    this.prototype = [['v', null], ['convexity', null]];
     this.parseargs(args, kwargs);
-    this.convexity = this.argshash.get('convexity');
+    this.convexity = this.argshash.get('convexity') || this.argshash.get('v');
     if (!(this.convexity instanceof VectorIterator) || this.convexity.values.length !== 3) {
       throw "parameter `convexity' of translate() should evaluate to a 3-value vector or a number (got: " + this.convexity.toString() + ")";
     }
@@ -454,6 +454,9 @@ MultMatrix = (function(_super) {
 
   function MultMatrix(body, args, kwargs) {
     this.body = body;
+    if ((this.body != null) && this.body.constructor.name === 'Objects') {
+      this.body = new Union(this.body);
+    }
     this.prototype = ['m'];
     this.parseargs(args, kwargs);
     this.matrix = this.argshash.get('m');
@@ -559,7 +562,11 @@ Objects = (function(_super) {
   __extends(Objects, _super);
 
   function Objects(objects) {
+    var _ref;
     this.objects = objects;
+    if ((_ref = this.objects) == null) {
+      this.objects = [];
+    }
     return;
   }
 
@@ -840,12 +847,32 @@ OpenSCADEvaluator = (function() {
   };
 
   OpenSCADEvaluator.prototype.walk = function(ctx, node) {
-    var arg, args, b, body, condition, ctor, defaultvalue, expr, id, idx, iterator, k, kwargs, m, name, new_ctx, nodetype, obj, objects, pargs, pkwargs, ret, v, value, variable, _i, _j, _k, _len, _len1, _len2, _ref, _ref1, _ref10, _ref11, _ref12, _ref2, _ref3, _ref4, _ref5, _ref6, _ref7, _ref8, _ref9;
+    var arg, args, b, body, condition, ctor, defaultvalue, expr, fct, id, idx, iterator, k, kwargs, m, name, new_ctx, nodetype, obj, objects, pargs, pkwargs, ret, v, value, variable, _i, _j, _k, _len, _len1, _len2, _ref, _ref1, _ref10, _ref11, _ref12, _ref2, _ref3, _ref4, _ref5, _ref6, _ref7, _ref8, _ref9;
     if (!(node != null)) {
       return;
     }
     nodetype = node.constructor.name;
     switch (nodetype) {
+      case "Include":
+        " call the 'include' function to get new nodes. ";
+
+        fct = ctx.get('include');
+        if (!(fct != null)) {
+          throw '"include" is not defined in this context';
+        }
+        node = fct(node.name);
+        this.walk(ctx, node);
+        return;
+      case "Use":
+        " call the 'use' function to get new nodes. ";
+
+        fct = ctx.get('use');
+        if (!(fct != null)) {
+          throw '"include" is not defined in this context';
+        }
+        node = fct(node.name);
+        this.walk(ctx, node);
+        return;
       case "Assignment":
         " set the proper value in the current context. ";
 
@@ -993,6 +1020,9 @@ OpenSCADEvaluator = (function() {
           b.parseargs(args, kwargs);
           new_ctx = new Context(ctx, b.argshash);
           m = this.walk(new_ctx, ctor.body);
+          if (ctor.constructor.name === 'ModuleDefinition' && m.constructor.name === 'Objects') {
+            m = new Union(m);
+          }
         } else {
           " the constructor is one of our built-in geometry objects ";
 

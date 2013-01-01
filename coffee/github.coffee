@@ -49,7 +49,6 @@ class ListView
             return
         
         row = @select('.row').length
-        console.log ['appending new row', row]
         
         t = """
         <div class="row" style="float: left; clear: both; background-color: white; border-bottom: 1px #4D944D solid; border-left: 1px #4D944D solid; border-right: 1px #4D944D solid;"></div>
@@ -67,7 +66,6 @@ class ListView
             cell.setStyle { width: @config.columns_width[col] + 'px', height: '22px' }
         
         return @select('.row')[row]
-
 
 """ This here is necessary because PrototypeJS stupidly sets headers that are rejected by the xmlhttprequest. """
 GithubCompatibleAjaxRequest = Class.create(Ajax.Request, {
@@ -104,10 +102,10 @@ GithubCompatibleAjaxRequest = Class.create(Ajax.Request, {
 
 class GithubRepo
     
-    constructor: (app, args, options) ->
+    constructor: (args, options) ->
         @self = new Element('div', options)
         Object.extend(@self, GithubRepo.prototype)
-        @self.init(app, args)
+        @self.init(args)
         return @self
     
     parse_args: (args) ->
@@ -119,7 +117,6 @@ class GithubRepo
         @user = @args[0]
         @repo = @args[1]
 
-        console.log ['path', @args]
         if @args.length >= 4 and @args[2].toLowerCase() in ['tree', 'blob']
             @branch = @args[3]
             @type = @args[2].toLowerCase()
@@ -138,7 +135,7 @@ class GithubRepo
         
         return
 
-    init: (@app, args) ->
+    init: (args) ->
         
         @parse_args(args)
         
@@ -198,10 +195,12 @@ class GithubRepo
         else
             @branch_url = '#github/' + @user + '/' + @repo + '/tree/' + @branch
         
-        path = '<a href="' + @user_url + '">' + @user + '</a>'
+        #path = '<a href="' + @user_url + '">' + @user + '</a>'
+        path = @user
         path += ' &raquo; <a href="' + @repo_url + '">' + @repo + '</a>'
         path += ' &raquo; branch: <a href="' + @branch_url + '">' + @branch + '</a>'
-        path += ' &raquo; tree: ' + @path
+        if @path != ''
+            path += ' &raquo; tree: ' + @path
         if @type == 'blob' and @filename?
             path += ' &raquo; blob: ' + @filename
         @location.update path
@@ -212,7 +211,6 @@ class GithubRepo
         """ Perform an ajax request to github and fetches the contents of a blob. """
         
         path = if @path == '' then '' else '/' + @path
-        console.log ['foo', @path, path, @filename]
         url = 'https://api.github.com/repos/' + @user + '/' + @repo + '/contents' + path + '/' + @filename + '?ref=' + @branch
         new GithubCompatibleAjaxRequest url,
             method: 'get'
@@ -228,15 +226,32 @@ class GithubRepo
         @blob_data = data
         
         text = Base64.decode(data.content)
-        console.log ['new file', text]
         
         @editor = new Editor('')
         @editor_container.insert @editor
+        
+        @editor.set_fetch_file_callback((name) => return @file_include_callback(name))
         
         @editor.setValue(text)
         @editor.update()
         
         return
+    
+    file_include_callback: (name) ->
+        
+        content = null
+        
+        console.log ['fetching file from github...', name]
+        
+        path = if @path == '' then '' else '/' + @path
+        url = 'https://api.github.com/repos/' + @user + '/' + @repo + '/contents' + path + '/' + name + '?ref=' + @branch
+        new GithubCompatibleAjaxRequest url,
+            asynchronous: false
+            method: 'get'
+            evalJSON: true
+            onSuccess: (response) => content = Base64.decode(response.responseJSON.content)
+        
+        return content
     
     fetch_repository: (cb) ->
         """ Perform an ajax request to github and fetches the information about a repository. """
@@ -324,17 +339,17 @@ class GithubRepo
                 name_cell = row.select('.cell')[1]
                 name_cell.setStyle
                     cursor: 'hand'
-                name_cell.observe 'click', (e) => @browse(e)
+                name_cell.observe 'click', (e) => @browse_cell(e)
                 name_cell.observe 'mouseover', (e) => 
-                    console.log e.findElement('.row')
                     e.findElement('.row').setStyle({backgroundColor: '#f0f0f0'})
                 name_cell.observe 'mouseout', (e) => e.findElement('.row').setStyle({backgroundColor: '#ffffff'})
         
         return
     
-    browse: (e) ->
+    browse_cell: (e) ->
         row = e.findElement('.row')
         url = row.url
-        console.log ['browsing to', url]
-        @app.navigate_to(GithubRepo, url)
+        
+        document.location = '#github/' + url
+        #@app.navigate_to(GithubRepo, )
         return

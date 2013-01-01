@@ -207,13 +207,30 @@ class Editor
     setValue: (text) -> @editor.setValue(text)
     getValue: () -> @editor.getValue()
     
+    set_fetch_file_callback: (@fetch_file_callback) -> return
+    
+    include_callback: (name) ->
+        content = @fetch_file_callback(name)
+        
+        console.log ['include file', name, 'size', content.length]
+        
+        tree = @parser.parse(content)
+        return tree
+    
+    use_callback: (name) ->
+        content = @fetch_file_callback(name)
+        
+        console.log ['use file', name, 'size', content.length]
+        
+        tree = @parser.parse(content)
+        return tree
+    
     update: () ->
         
         text = @getValue()
         console.log ['text length', text.length]
         
         return if text.length == 0
-        
         
         try
             tree = @parser.parse(text)
@@ -222,6 +239,10 @@ class Editor
             
             root_ctx = new Context()
             evaluator.register_builtins(root_ctx)
+            
+            if @fetch_file_callback?
+                root_ctx.set 'include', (name) => return @include_callback(name)
+                root_ctx.set 'use', (name) => return @use_callback(name)
             
             s = evaluator.evaluate(root_ctx)
             
